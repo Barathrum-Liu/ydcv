@@ -31,6 +31,7 @@ except ImportError:
 
 YDAPPID = os.getenv('YDCV_YOUDAO_APPID', '')
 YDAPPSEC = os.getenv('YDCV_YOUDAO_APPSEC', '')
+HOME= os.getenv('HOME', '/root')
 
 class GlobalOptions(object):
     def __init__(self, options=None):
@@ -263,6 +264,10 @@ def lookup_word(word):
 
     try:
         data = urlopen(yd_api).read().decode("utf-8")
+        with open(HOME+"/.ydcv_history", mode='a') as f:
+            f.write(word)
+            f.write('\n')
+
     except IOError:
         print("Network is unavailable")
     else:
@@ -281,6 +286,14 @@ def lookup_word(word):
 
 def arg_parse():
     parser = ArgumentParser(description="Youdao Console Version")
+    parser.add_argument('-H', '--history',
+                        action="store_true",
+                        default=False,
+                        help="print translate history, --wc for word count.")
+    parser.add_argument('--wc',
+                        action="store_true",
+                        default=False,
+                        help="word count.")
     parser.add_argument('-f', '--full',
                         action="store_true",
                         default=False,
@@ -346,16 +359,31 @@ def arg_parse():
 def main():
     global YDAPPID, YDAPPSEC
     options._options = arg_parse()
+    if options.history:
+        try:
+            with open(HOME+"/.ydcv_history") as f:
+                lines = f.readlines()
+                if not options.wc:
+                    for line in set(lines):
+                        print(line,end='')
+                else:
+                    d = dict()
+                    for line in lines:
+                        if line in d:
+                            d[line] += 1
+                        else:
+                            d[line] = 1
+                    d = sorted(d.items(), key=lambda d:d[1], reverse=True)
+                    for line in d:
+                        print(line[1],line[0],end='')
+
+        finally:
+            sys.exit()
 
     if YDAPPID == "" or YDAPPSEC == "":
         config = configparser.ConfigParser()
         config.read(os.path.expanduser(options.config))
-        try:
-            sec = config["YDCV"]
-        except KeyError:
-            print("Cannot find the API key.")
-            print("Please refer to: https://github.com/felixonmars/ydcv#%E6%B3%A8%E6%84%8F")
-            sys.exit()
+        sec = config["YDCV"]
         YDAPPID = sec["YDAPPID"]
         YDAPPSEC = sec["YDAPPSEC"]
 
