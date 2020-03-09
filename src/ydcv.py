@@ -31,7 +31,7 @@ except ImportError:
 
 YDAPPID = os.getenv('YDCV_YOUDAO_APPID', '')
 YDAPPSEC = os.getenv('YDCV_YOUDAO_APPSEC', '')
-HOME= os.getenv('HOME', '/root')
+HOME = os.getenv('HOME', '/root')
 
 class GlobalOptions(object):
     def __init__(self, options=None):
@@ -264,9 +264,6 @@ def lookup_word(word):
 
     try:
         data = urlopen(yd_api).read().decode("utf-8")
-        with open(HOME+"/.ydcv_history", mode='a') as f:
-            f.write(word)
-            f.write('\n')
 
     except IOError:
         print("Network is unavailable")
@@ -408,6 +405,7 @@ def main():
         else:
             try:
                 import readline
+                readline.read_history_file(HOME+"/.ydcv_history")
             except ImportError:
                 pass
             while True:
@@ -415,6 +413,7 @@ def main():
                     words = input('> ')
                     if words.strip():
                         lookup_word(words)
+                        readline.append_history_file(1, HOME+"/.ydcv_history")
                 except KeyboardInterrupt:
                     print()
                     continue
